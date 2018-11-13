@@ -1,0 +1,20 @@
+model = gensim.models.Word2Vec(documents, size=150, window=10, min_count=2, workers=10)
+
+size is the dimensionality of the feature vectors.
+
+window is the maximum distance between the current and predicted word within a sentence.
+
+alpha is the initial learning rate (will linearly drop to min_alpha as training progresses).
+
+seed = for the random number generator. Initial vectors for each word are seeded with a hash of the concatenation of word + str(seed). 
+
+min_count = ignore all words with total frequency lower than this.
+
+max_vocab_size = limit RAM during vocabulary building;
+
+workers = use this many worker threads to train the model (=faster training with multicore machines).
+
+hs = if 1, hierarchical softmax will be used for model training. If set to 0 (default), and negative is non-zero, negative sampling will be used.
+
+negative = if > 0, negative sampling will be used, the int for negative specifies how many “noise words” should be drawn (usually between 5-20). Default is 5. If set to 0, no negative samping is used.
+
