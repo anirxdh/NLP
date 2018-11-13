@@ -1,0 +1,60 @@
+import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from keras.layers import Dropout, Dense
+from keras import Sequential
+from nltk.corpus import stopwords
+from string import punctuation
+from nltk.tokenize import word_tokenize
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from nltk.stem import LancasterStemmer
+import nltk
+import os
+
+reviews = pd.read_csv(os.getcwd()+'\\datasets\\reviews.txt', sep='\n', header=None)
+labels = pd.read_csv(os.getcwd()+'\\datasets\\labels.txt', sep='\n', header=None)
+labels = np.where(labels == 'positive', 1, 0)
+
+print(len(labels), len(reviews))
+
+customStopWords = stopwords.words('english') + list(punctuation)
+stemmer = LancasterStemmer()
+
+cleanedReviews = []
+for text in reviews[0]:
+    data = word_tokenize(text.lower())
+    data = [stemmer.stem(x) for x in data if not x in customStopWords and not x.isdigit()]
+    cleanedReviews.append(' '.join(data))
+
+tokenized = []
+for sent in cleanedReviews:
+    for word in sent.split():
+        tokenized.append(word)
+
+dict = nltk.FreqDist(tokenized)
+dict.most_common(30)
+
+tfidf = TfidfVectorizer(max_features=1000)
+bow = tfidf.fit(cleanedReviews)
+tfidfData = bow.transform(cleanedReviews).toarray()
+features = np.array(bow.get_feature_names())
+
+del reviews, cleanedReviews, bow
+
+X_train, X_test, y_train, y_test = train_test_split(tfidfData, labels, test_size = 0.15)
+len(X_train[1])
+
+model = LogisticRegression(penalty='l1')
+model.fit(X_train, y_train)
+print(model.score(X_test, y_test))
+sortedCoef = model.coef_[0].argsort()
+print(features[sortedCoef[970:]], features[sortedCoef[0:30]])
+
+model = Sequential()
+model.add(Dense(input_shape=(len(tfidfData[1]),), activation='relu', units=300))
+model.add(Dropout(rate=0.17))
+model.add(Dense(activation='sigmoid', units=1))
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+#model.fit(X_train, y_train, batch_size=1500, epochs=53, validation_data=[X_test, y_test])
+model.fit(tfidfData, labels, batch_size=1500, epochs=53, validation_split=0.15)
